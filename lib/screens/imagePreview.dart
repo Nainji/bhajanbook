@@ -1,0 +1,105 @@
+import 'package:bhajan_book/screens/base.dart';
+import 'package:carousel_slider/carousel_options.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
+class ImagePreviewScreen extends StatefulWidget {
+  final List<String> imageUrls;
+  final String title;
+
+  const ImagePreviewScreen({Key? key, required this.imageUrls,required this.title}) : super(key: key);
+
+  @override
+  _ImagePreviewScreenState createState() => _ImagePreviewScreenState();
+}
+
+class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return BaseLayout(
+
+        title:  Text( widget.title),
+      child:
+      Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          CarouselSlider.builder(
+            itemCount: widget.imageUrls.length,
+            itemBuilder: (context, index, realIndex) {
+              return PhotoView(
+                imageProvider: NetworkImage(widget.imageUrls[index]),
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset('assets/images/logo_png.png');
+                },
+              );
+            },
+            options: CarouselOptions(
+              height: MediaQuery.of(context).size.height,
+              enlargeCenterPage: true,
+              enableInfiniteScroll: false,
+              viewportFraction: 1.0,
+              onPageChanged: (index, reason) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+          ),
+          Positioned(
+            bottom: 20.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: widget.imageUrls.asMap().entries.map((entry) {
+                return GestureDetector(
+                  onTap: () => CarouselSlider.builder(
+                    itemCount: widget.imageUrls.length,
+                    itemBuilder: (context, index, realIndex) {
+                      return PhotoView(
+                        imageProvider: NetworkImage(widget.imageUrls[index]),
+                      );
+                    },
+                    options: CarouselOptions(
+                      initialPage: entry.key,
+                      height: MediaQuery.of(context).size.height,
+                    ),
+                  ),
+                  child: Container(
+                    width: 8.0,
+                    height: 8.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentIndex == entry.key
+                          ? Colors.blueAccent
+                          : Colors.grey,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Positioned(
+            top: 20.0,
+            right: 20.0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Text(
+                '${_currentIndex + 1} / ${widget.imageUrls.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.0,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
