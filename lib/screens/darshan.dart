@@ -88,12 +88,12 @@ class CardItem extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ImagePreviewScreen(imageUrls: imageUrls,title: title,),
+            builder: (context) => ImagePreviewScreen(imageUrls: imageUrls,title: title,index: 0,),
           ),
         );
       },
-      child: Card(
-        elevation: 4,
+      child: Card( color: Color(0xFFFFF2C2),
+        elevation: 0,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [

@@ -10,8 +10,11 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+
+import 'imagePreview.dart';
 class Home extends StatefulWidget {
-  const Home({super.key});
+  final load;
+  const Home({required this.load});
 
   @override
   State<Home> createState() => _HomeState();
@@ -153,31 +156,7 @@ class _HomeState extends State<Home> {
       print('Error : $e');
     }
   }
-  void _showEnlargedImage(BuildContext context, File imageFile) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: AnimatedScale(
-            scale: 1.0,
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeInOut, // Smooth scaling animation
-            child: GestureDetector(
-              onTap: () {
-                Navigator.of(context).pop(); // Close the dialog when tapped
-              },
-              child: InteractiveViewer(
-                minScale: 0.5, // Minimum zoom level
-                maxScale: 4.0, // Maximum zoom level
-                child: Image.file(imageFile, fit: BoxFit.contain),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
 
   setData(responseData) async{
@@ -186,11 +165,11 @@ class _HomeState extends State<Home> {
     var box = await Hive.openBox('myBox');
     List<dynamic> home = responseData['resp-details']['common-content']['home'];
     final SharedPreferences prefs=await SharedPreferences.getInstance();
-    if(prefs.getString('user')!.isNotEmpty) {
-      String userString=await prefs.getString('user')??"";
-      print(userString);
-       user = jsonDecode(userString);
-    }
+    // if(prefs.getString('user')!.isNotEmpty) {
+    //   String userString=await prefs.getString('user')??"";
+    //   print(userString);
+    //    user = jsonDecode(userString);
+    // }
     setState(() {
       for (var item in home) {
         images.add(item['image']);
@@ -199,15 +178,23 @@ class _HomeState extends State<Home> {
       }
 
 
-      menuItems= responseData['resp-details']['menu'][user['role']];
+      menuItems= responseData['resp-details']['menu']['admin-menu'];
+
+      prefs.setString("menu", jsonEncode(menuItems));
+
       box.put('social', responseData['resp-details']['common-content']['social-media']);
       box.put('darshan',responseData['resp-details']['common-content']['daily-darshan']);
       box.put('panchang',responseData['resp-details']['common-content']['utsav-panchang']);
       box.put('about',responseData['resp-details']['common-content']['about-saras-nikunj']);
       box.put('links',responseData['resp-details']['common-content']['share-app-with-others']);
-      box.put('policy',responseData['resp-details']['common-content']['privacy-policy']['privacy-policy-text']);
+      box.put('policy',responseData['resp-details']['common-content']['privacy-policy']);
+      box.put('gallery',responseData['resp-details']['admin-content']['Gallery']);
+      box.put('suchna',responseData['resp-details']['admin-content']['Utsav Patra and Suchna']);
+      box.put('aaj',responseData['resp-details']['admin-content']['Aaj Ka Utsav']);
+      box.put('contacts',responseData['resp-details']['admin-content']['Contacts'][0]['people']);
+      box.put('publications',responseData['resp-details']['admin-content']['Publications']);
       box.put('icons',responseData['resp-details']['menu']['icons']);
-      prefs.setString("menu", jsonEncode(menuItems));
+
       isLoading=false;
     });
   }
@@ -224,8 +211,8 @@ class _HomeState extends State<Home> {
 
     // Check for network connectivity
     var connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) {
-      // No network available, load data from Hive
+    if (connectivityResult == ConnectivityResult.none||widget.load=='false') {
+
       var cachedData = box.get('content');
       if (cachedData != null) {
         setData(cachedData);  // Use cached data from Hive
@@ -261,6 +248,8 @@ class _HomeState extends State<Home> {
           if (responseData['status'] == 'success') {
             // Store data in Hive
             box.put('content', responseData);
+            getBooks();
+            getChapters();
             setData(responseData);  // Set the response data to the UI
             print("Data loaded from API and cached.");
           }
@@ -283,148 +272,152 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     getContent();
-    getBooks();
-    getChapters();
+
   }
   @override
   Widget build(BuildContext context) {
 
-    return isLoading?Center(child: CircularProgressIndicator()):BaseLayout(
+    return isLoading?Container(color:Color(0xFFFFF2C2),child: Center(child: CircularProgressIndicator(color: Colors.yellow[700],))):BaseLayout(
       title: const Text(
         'श्री सरस संग्रह',
         style: TextStyle(fontSize: 26, fontFamily: "TiroDevanagariHindi"),
       ),
 
-      child:SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            // Image Slider
-            CarouselSlider(
-              options: CarouselOptions(
-                height: 250.0,
-                enlargeCenterPage: true,
-                onPageChanged: (index, reason) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-              ),
-              items: images.map((imagePath) {
-                return FutureBuilder<File>(
-                  future: getImage(imagePath),
-                  builder: (BuildContext context, AsyncSnapshot<File> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      if (snapshot.hasData) {
-                        return GestureDetector(
-                            onTap: (){
-                              _showEnlargedImage(context, snapshot.data!);
-                            },
-                            child: Image.file(snapshot.data!, fit: BoxFit.cover));
-                      } else {
-                        return Center(child: Text('Error loading image'));
-                      }
+      child:Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          // Image Slider
+          CarouselSlider(
+            options: CarouselOptions(
+              height: 250.0,
+              enlargeCenterPage: true,
+              onPageChanged: (index, reason) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+            items: images.map((imagePath) {
+              return FutureBuilder<File>(
+                future: getImage(imagePath),
+                builder: (BuildContext context, AsyncSnapshot<File> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    if (snapshot.hasData) {
+                      return GestureDetector(
+                          onTap: (){
+                            // _showEnlargedImage(context, snapshot.data!);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ImagePreviewScreen(imageUrls: images,title: "Home",index:_currentIndex),
+                              ),
+                            );
+                          },
+                          child: Image.file(snapshot.data!, fit: BoxFit.cover));
                     } else {
-                      return Center(child: CircularProgressIndicator());
+                      return Center(child: Text('Error loading image'));
                     }
-                  },
-                );
-              }).toList(),
-            ),
-        
-            // Dot Indicator
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: images.map((url) {
-                int index = images.indexOf(url);
-                return Container(
-                  width: 38.0,
-                  height: 8.0,
-                  margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.rectangle,
-                    // borderRadius:BorderRadiusGeometry.lerp(),
-                    color: _currentIndex == index
-                        ? Colors.yellow[700] // Active indicator color
-                        : Colors.grey, // Inactive indicator color
-                  ),
-                );
-              }).toList(),
-            ),
-        
-            // Language and Font Size Selection Row
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ToggleButtons(
-                    isSelected: _selectedLanguage,
-                    borderRadius: BorderRadius.circular(30),
-                    selectedColor: Colors.white,
-                    fillColor: Colors.yellow[700],
-                    borderColor: Colors.grey,
-                    selectedBorderColor: Colors.yellow[700],
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text('Hindi'),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text('English'),
-                      ),
-                    ],
-                    onPressed: (int index) {
-                      setState(() {
-                        _selectedLanguage = [false, false];
-                        _selectedLanguage[index] = true;
+                  } else {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                },
+              );
+            }).toList(),
+          ),
 
-                      if(index==1){
-                        isHindi=false;
-                      }else{
-                        isHindi=true;
-                      }
+          // Dot Indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: images.map((url) {
+              int index = images.indexOf(url);
+              return Container(
+                width: 38.0,
+                height: 8.0,
+                margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  // borderRadius:BorderRadiusGeometry.lerp(),
+                  color: _currentIndex == index
+                      ? Colors.yellow[700] // Active indicator color
+                      : Colors.grey, // Inactive indicator color
+                ),
+              );
+            }).toList(),
+          ),
+
+          // Language and Font Size Selection Row
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ToggleButtons(
+                  isSelected: _selectedLanguage,
+                  borderRadius: BorderRadius.circular(30),
+                  selectedColor: Colors.white,
+                  fillColor: Colors.yellow[700],
+                  borderColor: Colors.grey,
+                  selectedBorderColor: Colors.yellow[700],
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text('Hindi'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text('English'),
+                    ),
+                  ],
+                  onPressed: (int index) {
+                    setState(() {
+                      _selectedLanguage = [false, false];
+                      _selectedLanguage[index] = true;
+
+                    if(index==1){
+                      isHindi=false;
+                    }else{
+                      isHindi=true;
+                    }
+                    });
+                  },
+                ),
+
+
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: Colors.yellow[700],
+                    inactiveTrackColor: Colors.grey[400],
+                    thumbColor: Colors.yellow[700],
+                    valueIndicatorColor: Colors.yellow[700],
+                  ),
+                  child: Slider(
+                    value: _fontSize,
+                    min: 20,
+                    max: 100,
+                    divisions: 100,
+                    label: _fontSize.round().toString(),
+                    onChanged: (double newValue) {
+                      setState(() {
+                        _fontSize = newValue;
                       });
                     },
                   ),
-
-
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Colors.yellow[700],
-                      inactiveTrackColor: Colors.grey[400],
-                      thumbColor: Colors.yellow[700],
-                      valueIndicatorColor: Colors.yellow[700],
-                    ),
-                    child: Slider(
-                      value: _fontSize,
-                      min: 0,
-                      max: 100,
-                      divisions: 100,
-                      label: _fontSize.round().toString(),
-                      onChanged: (double newValue) {
-                        setState(() {
-                          _fontSize = newValue;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-        
-            // Display Text
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: images.length>0?Text(
+          ),
+
+          // Display Text
+          images.length>0?Expanded(child: Container(
+            child: SingleChildScrollView(
+              child: Text(
                 isHindi ? hindiTexts[_currentIndex] : englishTexts[_currentIndex],
                 style: TextStyle(fontSize: _fontSize, color: Colors.brown),
                 textAlign: TextAlign.center,
-              ):SizedBox(height: 0,),
+              ),
             ),
-          ],
-        ),
+          )):SizedBox(height: 0,),
+        ],
       ),
     );
 

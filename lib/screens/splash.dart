@@ -52,10 +52,9 @@ class _SplashScreenState extends State<SplashScreen>
 
     // if (mounted) { // Ensure the widget is still mounted before calling Navigator
     if (hasData) {
-      Navigator.pushReplacementNamed(context, '/Home');
+      Navigator.pushReplacementNamed(context, '/Home',arguments: 'true');
     } else {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LoginPage()));
+      Navigator.pushReplacementNamed(context, '/Home',arguments: 'true');
     }
     // }/
   }
@@ -70,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Colors.white,
+        color: Color(0xFFFFF2C2),
         child:  Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -81,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 20.0), // Space between image and text
               const Text(
-                'श्री राधा सरस विहारिणे नमः\nश्रीशुकदेव श्यामचरन दासोज्जयति',
+                'श्री शुकदेव श्याम चरणदासो जयति',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: "TiroDevanagariHindi",

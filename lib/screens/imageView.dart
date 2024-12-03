@@ -15,9 +15,9 @@ class PicView extends StatefulWidget {
 }
 
 class _PicViewState extends State<PicView> {
-  List<dynamic> chapters=[];
-  List<dynamic> filtered=[];
-
+  List<dynamic> chapters = [];
+  List<dynamic> filtered = [];
+  ScrollController _scrollController = ScrollController();
 
   getChapters() async {
     await Hive.initFlutter();
@@ -25,21 +25,48 @@ class _PicViewState extends State<PicView> {
     List<dynamic> value = box.get('chapters');
 
     if (value != null) {
-
       var filteredChapters = value.where((chapter) => chapter['book-id'] == widget.pages['book-id']).toList();
 
       setState(() {
-        chapters = filteredChapters;
-        for(var i=0;i<filteredChapters.length;i++){
-          filtered.addAll(filteredChapters[i]['pages']);
-        }
-        print(value.length);
-        print(chapters.length);
+        Set<String> processedPageNumbers = Set();
 
+        for (var i = 0; i < filteredChapters.length; i++) {
+          var pages = filteredChapters[i]['pages'];
+
+          for (var page in pages) {
+            var pageNumber = page['page-number'];
+
+            if (!processedPageNumbers.contains(pageNumber)) {
+              processedPageNumbers.add(pageNumber);
+              filtered.add(page);
+            }
+          }
+        }
+
+        // Scroll to the desired index after filtering
+        scrollToPageNumber();
       });
     }
   }
 
+  void scrollToPageNumber() {
+    // Find the index of the item where 'page-number' matches the target value
+    int indexToScroll = filtered.indexWhere(
+            (page) => page['page-number'] == widget.pages['pages'][0]['page-number']);
+
+    if (indexToScroll != -1) {
+      // Get the width of the screen and dynamically calculate the scroll position
+      double screenWidth = MediaQuery.of(context).size.width;
+      double itemWidth = screenWidth*1.07 ; // Assuming you want each item to take half the screen width
+
+      // Animate to the specific index
+      _scrollController.animateTo(
+        indexToScroll * itemWidth,
+        duration: Duration(seconds: 1),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -53,6 +80,7 @@ class _PicViewState extends State<PicView> {
       child: SizedBox(
         height: MediaQuery.of(context).size.height, // Full height of screen
         child: ListView.builder(
+          controller: _scrollController, // Attach the ScrollController
           scrollDirection: Axis.horizontal, // Set scroll direction to horizontal
           itemCount: filtered.length,
           itemBuilder: (context, index) {
@@ -74,6 +102,7 @@ class _PicViewState extends State<PicView> {
     );
   }
 }
+
 
 class CardItem extends StatefulWidget {
   final String imagePath;

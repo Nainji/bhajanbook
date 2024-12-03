@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "765866222584",
+    "project_id": "saras-sangrah",
+    "storage_bucket": "saras-sangrah.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:765866222584:android:c8e5b88e3f1861b932ec0d",
+        "android_client_info": {
+          "package_name": "com.bhajanbook.nainji"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyfQuMEYqcq2r-gSLzyzR7XqwHBWSNhYk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

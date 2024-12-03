@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="firebase_database_url">https://your-database-name.firebaseio.com/</string>
+    <string name="google_app_id">1:765866222584:android:c8e5b88e3f1861b932ec0d</string>
+    <string name="google_api_key">AIzaSyDyfQuMEYqcq2r-gSLzyzR7XqwHBWSNhYk</string>
+    <!-- <string name="firebase_storage_bucket">sportsocial-ce11c.appspot.com</string> -->
+    <string name="project_id">saras-sangrah</string>
+    <string name="application_id">com.bhajanbook.nainji</string>
+    <string name="messagingSenderId">765866222584</string>
+</resources>
+

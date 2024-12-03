@@ -1,21 +1,107 @@
 import 'dart:convert';
+import 'package:bhajan_book/firebase_api.dart';
+import 'package:bhajan_book/screens/Galery.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
 import 'package:bhajan_book/screens/Home.dart';
 import 'package:bhajan_book/screens/about.dart';
+import 'package:bhajan_book/screens/ajutsav.dart';
 import 'package:bhajan_book/screens/appDetails.dart';
 import 'package:bhajan_book/screens/books.dart';
 import 'package:bhajan_book/screens/chapter.dart';
+import 'package:bhajan_book/screens/charan.dart';
+import 'package:bhajan_book/screens/contacts.dart';
 import 'package:bhajan_book/screens/content.dart';
 import 'package:bhajan_book/screens/darshan.dart';
 import 'package:bhajan_book/screens/panchang.dart';
 import 'package:bhajan_book/screens/policy.dart';
+import 'package:bhajan_book/screens/publications.dart';
 import 'package:bhajan_book/screens/shareScreen.dart';
 import 'package:bhajan_book/screens/socialMedia.dart';
 import 'package:bhajan_book/screens/splash.dart';
+import 'package:bhajan_book/screens/utsavPatra.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(MyApp());
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+
+
+
+
+Future<void> handleBackgroundMessage(RemoteMessage message) async {
+  print('Handling a background message: ${message.notification?.body}');
+}
+
+Future<void> _showNotification(RemoteMessage message) async {
+  const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+    'high_importance_channel', // Channel ID
+    'High Importance', // Channel Name
+    icon: 'mipmap/ic_launcher',
+    importance: Importance.max,
+    priority: Priority.high,
+    showWhen: false,
+  );
+
+  const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidNotificationDetails);
+
+  await flutterLocalNotificationsPlugin.show(
+    message.notification.hashCode, // Unique ID for notification
+    message.notification!.title,
+    message.notification!.body,
+    platformChannelSpecifics,
+  );
+}
+
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+  FirebaseApi().initNotification();
+  FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
+
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('drawable/ic_launcher');
+
+  // iOS-specific notification settings
+  // final DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
+  //   onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) async {
+  //   },
+  // );
+
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    // iOS: initializationSettingsIOS, // iOS settings added
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse response) {
+    },
+  );
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    if (message.notification != null) {
+      print('Message also contained a notification: ${message.data}');
+      _showNotification(message);
+    }
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print('A notification was opened: ${message.notification?.title}');
+  });
+
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]).then((_) {
+    runApp(MyApp());
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -43,11 +129,16 @@ class MyApp extends StatelessWidget {
       routes: {
         '/Social Media': (context) => SocialMediaScreen(),
         '/Daily Darshan': (context) => Darshan(),
+        '/Gallery': (context) => GalleryScreen(),
+        '/Utsav Patra and Suchna':(context)=>EventsScreen(),
+        '/Aaj Ka Utsav':(context)=>aajutsav(),
+        '/Contacts':(context)=>ContactScreen(),
+        '/Publications':(context)=>PublicationsScreen(),
         '/Utsav Panchang': (context) => Panchang(),
         '/About Saras Nikunj': (context) => SarasNikunjScreen(),
         '/Privacy Policy':(context)=>PrivacyPolicyScreen(),
         '/Share App with Others':(contex)=>ShareAppScreen(),
-        '/App version':(context)=>AppDetailsScreen()
+        '/App version':(context)=>AppDetailsScreen(),
 
 
       },
@@ -56,14 +147,19 @@ class MyApp extends StatelessWidget {
         switch (settings.name) {
 
           case '/Home':
-            return MaterialPageRoute(builder: (context) => Home());
+            return MaterialPageRoute(builder: (context) => Home(load: args,));
           case '/file':
             return MaterialPageRoute(builder: (context)=>FileViewerScreen(file: args));
           case '/Shri Shuk Sampraday':
 
             return MaterialPageRoute(builder: (context) => Books(category:args));
+          case '/Bhakti Sahitya Sangrah':
+
+            return MaterialPageRoute(builder: (context) => Books(category:args));
           case '/chapters':
             return MaterialPageRoute(builder: (context) => Chapters(id: args)); // You can handle args if needed
+          case '/acharya':
+            return MaterialPageRoute(builder: (context) => AcharyaCharan(id: args));
           default:
             return MaterialPageRoute(builder: (context) => SplashScreen());
         }

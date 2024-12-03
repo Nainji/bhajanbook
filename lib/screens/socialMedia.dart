@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bhajan_book/screens/base.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -32,13 +34,32 @@ class _SocialMediaScreenState extends State<SocialMediaScreen> {
 
   // Function to open URLs in a browser
   Future<void> _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
+    final Uri uri = Uri.parse(url);  // Ensure the URL is parsed as a Uri object
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     } else {
       // Handle the error gracefully
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not launch $url')),
       );
+    }
+  }
+
+  Future<void> openMap(String url) async {
+    Uri uri;
+
+      uri = Uri.parse(url);
+
+print(url.substring(8));
+
+
+    try {
+
+        await launchUrl(uri);
+
+    } catch (e) {
+      await launchUrl(uri);
+      debugPrint(e.toString());
     }
   }
 
@@ -87,7 +108,7 @@ class _SocialMediaScreenState extends State<SocialMediaScreen> {
                         onTap: () {
                           final url = channel['url'];
                           if (url != null) {
-                            _launchURL(url);
+                            openMap(url);
                           }
                         },
                         child: SizedBox(

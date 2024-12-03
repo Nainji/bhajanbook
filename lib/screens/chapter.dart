@@ -69,7 +69,7 @@ class _ChaptersState extends State<Chapters> {
                 var chapter =chapters[index];
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: GestureDetector(
+                  child: chapter['serial-number'].toString()=='0'?SizedBox(height: 0,):GestureDetector(
                     onTap: (){Navigator.pushNamed(context, '/file',arguments: {"type":widget.id['type'],"data":chapters[index]});},
                     child: Card(
                       color: Color(0xFFFFF2C2),
@@ -80,15 +80,15 @@ class _ChaptersState extends State<Chapters> {
                       ),
                       child: ListTile(
                         leading: Text(
-                          '${index+1}', // Displaying serialNumber on the left side
+                          chapter['serial-number'].toString(), // Displaying serialNumber on the left side
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         title: Text(
-                          chapter['titleHindi'] ?? chapter['title'],
+                          chapter['title-hindi'] ?? chapter['title'],
                           style: TextStyle(fontSize: 20),
                         ),
                         trailing: Text(
-                          '${chapter['pageNumber']}',
+                          '${chapter['from-page-number']}',
                           style: TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                       ),

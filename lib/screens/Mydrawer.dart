@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MyDrawer extends StatefulWidget {
@@ -13,9 +14,18 @@ class MyDrawer extends StatefulWidget {
 
 class _MyDrawerState extends State<MyDrawer> {
   Map<String, List<String>> menu = {};
-  Map<String, dynamic> icon = {};
+  Map<dynamic, dynamic> icon = {};
+String version="";
+  Future<void> _getAppDetails() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
 
-
+    setState(() {
+      // appName = packageInfo.appName;
+      // packageName = packageInfo.packageName;
+      version = packageInfo.version;
+      // buildNumber = packageInfo.buildNumber;
+    });
+  }
   void handleLogout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -55,8 +65,11 @@ class _MyDrawerState extends State<MyDrawer> {
     final String? menuItemsString = prefs.getString('menu');
     await Hive.initFlutter();
     var box = await Hive.openBox('myBox');
-    Map<String, dynamic> icons = box.get('icons'); // Get data from Hive
-
+    var a=box.get('icons');
+    Map<dynamic, dynamic> icons={};
+    if(a!=null) {
+      icons = a; // Get data from Hive
+    }
     if (menuItemsString != null) {
       final Map<String, dynamic> decodedMenu = jsonDecode(menuItemsString);
       setState(() {
@@ -64,7 +77,7 @@ class _MyDrawerState extends State<MyDrawer> {
           return MapEntry(
               key, List<String>.from(value as List)); // Convert each dynamic list to List<String>
         });
-        icon = icons;
+        icon = icons==null?{}:icons;
       });
     }
   }
@@ -73,6 +86,7 @@ class _MyDrawerState extends State<MyDrawer> {
   void initState() {
     super.initState();
     getItem();
+    _getAppDetails();
   }
 
   @override
@@ -80,24 +94,25 @@ class _MyDrawerState extends State<MyDrawer> {
     return Drawer(
       child: Column(
         children: [
+          SizedBox(height: 100,),
           // Drawer Header with user details
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.yellow[700], // Background color
-            ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 50),
-            ),
-            accountName: Text(
-              'Hitesh Dutt Mathur', // Replace with dynamic data
-              style: TextStyle(color: Colors.black),
-            ),
-            accountEmail: Text(
-              'hiteshmathur@gmail.com', // Replace with dynamic data
-              style: TextStyle(color: Colors.black54),
-            ),
-          ),
+          // UserAccountsDrawerHeader(
+          //   decoration: BoxDecoration(
+          //     color: Colors.yellow[700], // Background color
+          //   ),
+          //   currentAccountPicture: CircleAvatar(
+          //     backgroundColor: Colors.white,
+          //     child: Icon(Icons.person, size: 50),
+          //   ),
+          //   accountName: Text(
+          //     'Hitesh Dutt Mathur', // Replace with dynamic data
+          //     style: TextStyle(color: Colors.black),
+          //   ),
+          //   accountEmail: Text(
+          //     'hiteshmathur@gmail.com', // Replace with dynamic data
+          //     style: TextStyle(color: Colors.black54),
+          //   ),
+          // ),
 
           Expanded(
             child: ListView(
@@ -141,6 +156,9 @@ class _MyDrawerState extends State<MyDrawer> {
             title: Text(submenu),
             leading: Icon(Icons.arrow_right),
             onTap: () {
+              print(submenu);
+              print(title);
+              print('route');
               Navigator.pushNamed(context, '/$title', arguments: submenu);
             },
           );
@@ -164,12 +182,14 @@ class _MyDrawerState extends State<MyDrawer> {
             }
           },
         ),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(title.toLowerCase()=='app version'?title+" "+version:title, style: TextStyle(fontWeight: FontWeight.bold)),
         onTap: () {
           if (title.toLowerCase() == 'logout') {
             handleLogout(context);
-          } else {
-            Navigator.pushNamed(context, '/$title');
+          } else if(title.toLowerCase() == 'app version'){
+            return;
+          }else {
+            Navigator.pushNamed(context, '/$title',arguments: 'false');
           }
         },
       );

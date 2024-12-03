@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:bhajan_book/screens/base.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';  // Import url_launcher
+import 'package:url_launcher/url_launcher.dart';
+
+import 'imagePreview.dart';  // Import url_launcher
 
 class SarasNikunjScreen extends StatefulWidget {
   @override
@@ -25,15 +29,40 @@ class _SarasNikunjScreenState extends State<SarasNikunjScreen> {
     }
   }
 
-  Future<void> openMap(double latitude, double longitude) async {
-    String googleUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-    if (await canLaunch(googleUrl)) {
-      await launch(googleUrl);
+  Future<void> openMap1(double latitude, double longitude) async {
+    final Uri googleUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
+    if (await canLaunchUrl(googleUrl)) {
+      await launchUrl(googleUrl);
     } else {
       throw 'Could not open the map.';
     }
   }
+  Future<void> openMap(double latitude, double longitude) async {
+    Uri uri;
 
+    if (Platform.isAndroid) {
+      uri = Uri.parse('geo:$latitude,$longitude?q=$latitude,$longitude');
+    } else {
+      uri = Uri.parse('comgooglemaps://?q=$latitude,$longitude');
+    }
+
+    final fallbackUri = Uri(
+      scheme: "https",
+      host: "maps.google.com",
+      queryParameters: {'q': '$latitude, $longitude'},
+    );
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        await launchUrl(fallbackUri);
+      }
+    } catch (e) {
+      await launchUrl(fallbackUri);
+      debugPrint(e.toString());
+    }
+  }
   @override
   void initState() {
     super.initState();
@@ -67,11 +96,21 @@ class _SarasNikunjScreenState extends State<SarasNikunjScreen> {
                           borderRadius: BorderRadius.circular(10.0),
                           color: Colors.amber,
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10.0),
-                          child: Image.network(
-                            imageData["image"],
-                            fit: BoxFit.cover,
+                        child: GestureDetector(
+                          onTap: (){
+                        Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ImagePreviewScreen(imageUrls: details["slider-images"].map((item) => item["image"]!).toList(),title: "About",index:0),
+                        ),
+                      );
+                    },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10.0),
+                            child: Image.network(
+                              imageData["image"],
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       );
@@ -130,9 +169,11 @@ class _SarasNikunjScreenState extends State<SarasNikunjScreen> {
                       textStyle: TextStyle(fontSize: 18,color: Colors.white),
                       backgroundColor: Colors.yellow[700]
                   ),
-                  onPressed: () {
+                  onPressed: () async{
                     if (details['Latitude'] != null && details['Longitude'] != null) {
-                      openMap(details['Latitude'], details['Longitude']);
+                      print(details);
+                      // await openMap(37.7749, -122.4194);
+                      openMap(double.parse(details['Latitude']), double.parse(details['Longitude']));
                     }
                   },
                   child: Text("Open in Google Maps",style: TextStyle(color: Colors.white),),
